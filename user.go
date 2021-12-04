@@ -14,6 +14,10 @@ func (User) TableName() string {
 	return "user"
 }
 
+func (user *User) KeyName() string {
+	return KeyGenerate(user.TableName(), strconv.Itoa(user.ID))
+}
+
 func (user *User) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":   user.ID,
@@ -27,7 +31,7 @@ func CreateUser(user *User) (err error) {
 		return
 	}
 	user.ID = ID
-	key := KeyGenerate(user.TableName(), strconv.Itoa(ID))
+	key := user.KeyName()
 	intCmd := redisDB.HSet(ctx, key, user.ToMap())
 	if err := intCmd.Err(); err != nil {
 		log.Println(err)
@@ -35,8 +39,8 @@ func CreateUser(user *User) (err error) {
 	return
 }
 
-func UpdateUser(ID int, user *User) (err error) {
-	key := KeyGenerate(user.TableName(), strconv.Itoa(ID))
+func UpdateUser(user *User) (err error) {
+	key := user.KeyName()
 	intCmd := redisDB.HSet(ctx, key, user.ToMap())
 	if err := intCmd.Err(); err != nil {
 		log.Println(err)
@@ -44,8 +48,8 @@ func UpdateUser(ID int, user *User) (err error) {
 	return
 }
 
-func RemoveUser(ID int, user *User) (err error) {
-	key := KeyGenerate(user.TableName(), strconv.Itoa(ID))
+func RemoveUser(user *User) (err error) {
+	key := user.KeyName()
 	intCmd := redisDB.Del(ctx, key)
 	if err = intCmd.Err(); err != nil {
 		log.Println(err)

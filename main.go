@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -20,21 +19,29 @@ func main() {
 		DB:       1,
 	})
 
-	user := User{
-		Name: "Jack",
-	}
+	defer redisDB.Close()
 
-	if err := CreateUser(&user); err != nil {
-		fmt.Println(err)
-		return
-	}
+	// article := &Article{
+	// 	ID:     0,
+	// 	Title:  "Hi Go",
+	// 	Link:   "http://127.0.0.1/Go",
+	// 	Poster: "wait",
+	// 	Time:   time.Now().Unix(),
+	// 	Votes:  0,
+	// }
 
-	art, err := GetUser(user.ID)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	// CreateArticle(article)
 
-	fmt.Printf("%+v\n", art)
+	// user := &User{
+	// 	Name: "Jack",
+	// }
 
+	// CreateUser(user)
+
+	// VoteArticle(user, article)
+
+	// article, _ := GetArticle(1)
+	// user, _ := GetUser(2)
+
+	// VoteArticle(user, article)
 }

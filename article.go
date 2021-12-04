@@ -3,9 +3,16 @@ package main
 import (
 	"log"
 	"strconv"
+
+	"github.com/go-redis/redis/v8"
 )
 
-const ArticleName = "article"
+const (
+	ArticleName           = "article"
+	ArticlePublishZsetKey = "article:publish"
+	ArticleScoreZsetKey   = "article:score"
+	voteBase              = 432
+)
 
 type Article struct {
 	ID     int    `json:"id"`
@@ -41,10 +48,14 @@ func CreateArticle(article *Article) (err error) {
 		return
 	}
 	key := article.KeyName()
+
 	intCmd := redisDB.HSet(ctx, key, article.ToMap())
 	if err := intCmd.Err(); err != nil {
 		log.Println(err)
 	}
+
+	PublishArticle(article)
+
 	return
 }
 
@@ -56,7 +67,6 @@ func UpdateArticle(article *Article) (err error) {
 	}
 	return
 }
-
 
 func RemoveArticle(art *Article) (err error) {
 	key := art.KeyName()
@@ -89,4 +99,41 @@ func GetArticle(ID int) (art *Article, err error) {
 	art.Time, _ = strconv.ParseInt(m["time"], 10, 64)
 	art.Votes, _ = strconv.Atoi(m["votes"])
 	return
+}
+
+func PublishArticle(article *Article) (err error) {
+
+	z := &redis.Z{
+		Score:  float64(article.Time),
+		Member: article.KeyName(),
+	}
+
+	cmd := redisDB.ZAdd(ctx, ArticlePublishZsetKey, z)
+	return cmd.Err()
+}
+
+func UpdateArticleScore(article *Article) (err error) {
+
+	score := article.Time/1000 + int64(voteBase*article.Votes)
+
+	z := &redis.Z{
+		Score:  float64(score),
+		Member: article.KeyName(),
+	}
+
+	cmd := redisDB.ZAdd(ctx, ArticleScoreZsetKey, z)
+	return cmd.Err()
+}
+
+// VoteArticle 用户给文章投票
+func VoteArticle(user *User, article *Article) (err error) {
+
+	key := KeyGenerate("vote", article.KeyName())
+
+	redisDB.SAdd(ctx, key, user.KeyName())
+
+	article.Votes++
+	redisDB.HSet(ctx, article.KeyName(), "votes", article.Votes)
+
+	return UpdateArticleScore(article)
 }
