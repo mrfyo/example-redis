@@ -48,6 +48,15 @@ func CreateArticle(article *Article) (err error) {
 	return
 }
 
+func UpdateArticle(article *Article) (err error) {
+	key := article.KeyName()
+	intCmd := redisDB.HSet(ctx, key, article.Assemb())
+	if err := intCmd.Err(); err != nil {
+		log.Println(err)
+	}
+	return
+}
+
 func GetArticle(ID int) (art *Article, err error) {
 
 	key := KeyGenerate(ArticleName, strconv.Itoa(ID))
