@@ -24,6 +24,7 @@ func NextID(name string) (ID int, err error) {
 	return
 }
 
+// ExtraID 提取ID
 func ExtraID(key string) (ID int, err error) {
 	idx := strings.LastIndex(":", key)
 	if idx == -1 || idx == len(key)-1 {
@@ -33,4 +34,13 @@ func ExtraID(key string) (ID int, err error) {
 		ID, err = strconv.Atoi(key[idx+1:])
 	}
 	return
+}
+
+func AnyEmptyStr(items ...string) (isEmpty bool) {
+	for _, v := range items {
+		if len(v) == 0 {
+			return true
+		}
+	}
+	return false
 }

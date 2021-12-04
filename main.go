@@ -2,8 +2,12 @@ package main
 
 import (
 	"context"
-	"time"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -13,6 +17,7 @@ var (
 )
 
 func main() {
+	CtrlCWatcher()
 
 	redisDB = redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
@@ -20,29 +25,28 @@ func main() {
 		DB:       1,
 	})
 
-	defer redisDB.Close()
+	router := gin.Default()
 
-	article := &Article{
-		ID:     0,
-		Title:  "Hi Python",
-		Link:   "http://127.0.0.1/Python",
-		Poster: "wait",
-		Time:   time.Now().Unix(),
-		Votes:  0,
-	}
+	userHandler(router)
 
-	CreateArticle(article)
+	router.Run(":8080")
+}
 
-	user := &User{
-		Name: "Mark",
-	}
+func userHandler(router *gin.Engine) {
+	router.GET("/users", ListUser)
+	router.POST("/users", AddUser)
+	router.DELETE("/users/:id", DeleteUser)
+}
 
-	CreateUser(user)
-	PublishArticle(article)
-	VoteArticle(user, article)
+func CtrlCWatcher() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGALRM)
+	go func() {
+		for sig := range c {
+			log.Printf("captured %v, stopping profiler and exiting..", sig)
 
-	// article, _ := GetArticle(1)
-	// user, _ := GetUser(2)
-
-	// VoteArticle(user, article)
+			redisDB.Close()
+			os.Exit(0)
+		}
+	}()
 }
