@@ -24,7 +24,7 @@ func (art *Article) KeyName() string {
 	return KeyGenerate(art.TableName(), strconv.Itoa(art.ID))
 }
 
-func (art *Article) Assemb() map[string]interface{} {
+func (art *Article) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":     art.ID,
 		"title":  art.Title,
@@ -41,7 +41,7 @@ func CreateArticle(article *Article) (err error) {
 		return
 	}
 	key := article.KeyName()
-	intCmd := redisDB.HSet(ctx, key, article.Assemb())
+	intCmd := redisDB.HSet(ctx, key, article.ToMap())
 	if err := intCmd.Err(); err != nil {
 		log.Println(err)
 	}
@@ -50,8 +50,19 @@ func CreateArticle(article *Article) (err error) {
 
 func UpdateArticle(article *Article) (err error) {
 	key := article.KeyName()
-	intCmd := redisDB.HSet(ctx, key, article.Assemb())
+	intCmd := redisDB.HSet(ctx, key, article.ToMap())
 	if err := intCmd.Err(); err != nil {
+		log.Println(err)
+	}
+	return
+}
+
+
+func RemoveArticle(art *Article) (err error) {
+	key := art.KeyName()
+
+	intCmd := redisDB.Del(ctx, key)
+	if err = intCmd.Err(); err != nil {
 		log.Println(err)
 	}
 	return
@@ -77,15 +88,5 @@ func GetArticle(ID int) (art *Article, err error) {
 	}
 	art.Time, _ = strconv.ParseInt(m["time"], 10, 64)
 	art.Votes, _ = strconv.Atoi(m["votes"])
-	return
-}
-
-func DeleteArticle(art *Article) (err error) {
-	key := art.KeyName()
-
-	intCmd := redisDB.Del(ctx, key)
-	if err = intCmd.Err(); err != nil {
-		log.Println(err)
-	}
 	return
 }

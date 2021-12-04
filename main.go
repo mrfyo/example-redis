@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -21,21 +20,16 @@ func main() {
 		DB:       1,
 	})
 
-	article := Article{
-		ID:     0,
-		Title:  "Hi Go",
-		Link:   "http://127.0.0.1/Go",
-		Poster: "wait",
-		Time:   time.Now().Unix(),
-		Votes:  46,
+	user := User{
+		Name: "Jack",
 	}
 
-	if err := CreateArticle(&article); err != nil {
+	if err := CreateUser(&user); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	art, err := GetArticle(article.ID)
+	art, err := GetUser(user.ID)
 	if err != nil {
 		fmt.Println(err)
 		return
