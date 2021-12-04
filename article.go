@@ -9,8 +9,8 @@ import (
 
 const (
 	ArticleName           = "article"
-	ArticlePublishZsetKey = "article:publish"
-	ArticleScoreZsetKey   = "article:score"
+	ArticlePublishZsetKey = "publish:article"
+	ArticleScoreZsetKey   = "score:article"
 	voteBase              = 432
 )
 
@@ -53,8 +53,6 @@ func CreateArticle(article *Article) (err error) {
 	if err := intCmd.Err(); err != nil {
 		log.Println(err)
 	}
-
-	PublishArticle(article)
 
 	return
 }
@@ -103,37 +101,73 @@ func GetArticle(ID int) (art *Article, err error) {
 
 func PublishArticle(article *Article) (err error) {
 
-	z := &redis.Z{
-		Score:  float64(article.Time),
-		Member: article.KeyName(),
-	}
+	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		key := article.KeyName()
+		p.ZAdd(ctx, ArticlePublishZsetKey, &redis.Z{
+			Score:  float64(article.Time),
+			Member: key,
+		})
 
-	cmd := redisDB.ZAdd(ctx, ArticlePublishZsetKey, z)
-	return cmd.Err()
-}
+		p.ZAdd(ctx, ArticleScoreZsetKey, &redis.Z{
+			Score:  getArticleScore(article),
+			Member: key,
+		})
 
-func UpdateArticleScore(article *Article) (err error) {
+		return nil
+	})
 
-	score := article.Time/1000 + int64(voteBase*article.Votes)
-
-	z := &redis.Z{
-		Score:  float64(score),
-		Member: article.KeyName(),
-	}
-
-	cmd := redisDB.ZAdd(ctx, ArticleScoreZsetKey, z)
-	return cmd.Err()
+	return
 }
 
 // VoteArticle 用户给文章投票
 func VoteArticle(user *User, article *Article) (err error) {
+	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		key := KeyGenerate("vote", article.KeyName())
 
-	key := KeyGenerate("vote", article.KeyName())
+		p.SAdd(ctx, key, user.KeyName())
 
-	redisDB.SAdd(ctx, key, user.KeyName())
+		article.Votes++
+		key = article.KeyName()
+		p.HSet(ctx, key, "votes", article.Votes)
 
-	article.Votes++
-	redisDB.HSet(ctx, article.KeyName(), "votes", article.Votes)
+		p.ZAdd(ctx, ArticleScoreZsetKey, &redis.Z{
+			Score:  getArticleScore(article),
+			Member: key,
+		})
 
-	return UpdateArticleScore(article)
+		return nil
+	})
+
+	return
+}
+
+func getArticleScore(article *Article) float64 {
+	score := article.Time/1000 + int64(voteBase*article.Votes)
+	return float64(score)
+}
+
+// TopScoreArticle 获取分数最高的 n 篇文章
+func TopScoreArticle(num int) (articles []*Article) {
+
+	cmd := redisDB.ZRevRangeByScore(ctx, ArticleScoreZsetKey, &redis.ZRangeBy{
+		Count: int64(num),
+	})
+
+	if err := cmd.Err(); err != nil {
+		return
+	}
+
+	members := cmd.Val()
+
+	for _, member := range members {
+		if ID, err := ExtraID(member); err != nil {
+			continue
+		} else {
+			article, err := GetArticle(ID)
+			if err != nil {
+				articles = append(articles, article)
+			}
+		}
+	}
+	return
 }
