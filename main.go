@@ -21,27 +21,26 @@ func main() {
 		DB:       1,
 	})
 
-	key := "article:123"
+	article := Article{
+		ID:     0,
+		Title:  "Hi Go",
+		Link:   "http://127.0.0.1/Go",
+		Poster: "wait",
+		Time:   time.Now().Unix(),
+		Votes:  46,
+	}
 
-	err := redisDB.HSet(ctx, key, map[string]interface{}{
-		"title":  "Redis Reference",
-		"link":   "http://doc.redisfans.com/",
-		"poster": "1",
-		"time":   time.Now().Unix(),
-		"votes":  32,
-	}).Err()
+	if err := CreateArticle(&article); err != nil {
+		fmt.Println(err)
+		return
+	}
 
+	art, err := GetArticle(article.ID)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	res := redisDB.HGetAll(ctx, key)
-	if err := res.Err(); err != nil {
-		fmt.Println(err)
-		return 
-	}
+	fmt.Printf("%+v\n", art)
 
-	fmt.Println(res.Val())
-	
 }
