@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -20,15 +21,27 @@ func main() {
 		DB:       1,
 	})
 
-	if err := redisDB.Set(ctx, "hi", "No", 0).Err(); err != nil {
+	key := "article:123"
+
+	err := redisDB.HSet(ctx, key, map[string]interface{}{
+		"title":  "Redis Reference",
+		"link":   "http://doc.redisfans.com/",
+		"poster": "1",
+		"time":   time.Now().Unix(),
+		"votes":  32,
+	}).Err()
+
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	res := redisDB.Get(ctx, "hi")
+	res := redisDB.HGetAll(ctx, key)
 	if err := res.Err(); err != nil {
 		fmt.Println(err)
-		return
+		return 
 	}
+
 	fmt.Println(res.Val())
+	
 }
