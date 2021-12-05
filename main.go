@@ -29,6 +29,7 @@ func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/assets", "./assets")
+	router.StaticFile("/favicon.ico", "./assets/favicon.ico")
 	HomeHandler(router)
 	UserHandler(router)
 	ArticleHandler(router)

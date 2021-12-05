@@ -111,7 +111,7 @@ func GetUser(id int) (user *User, err error) {
 
 func GetAllUserByPage(offset, limit int) (users []*User) {
 
-	keys, err := redisDB.ZRangeByScore(ctx, UserRecordKey, &redis.ZRangeBy{
+	keys, err := redisDB.ZRevRangeByScore(ctx, UserRecordKey, &redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",
 		Offset: int64(offset),

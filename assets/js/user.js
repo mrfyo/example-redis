@@ -71,14 +71,19 @@ Vue.component("user-component", {
 
     fetchUsers() {
       this.loading = true
-      request.get("api/users").then(resp => {
+      request.get("api/users", {
+        params: {
+          offset: 0,
+          limit: 10
+         }
+      }).then(resp => {
         const result = resp.data
         if(result.code === 0) {
-          const data = result.data
-          const {items} = data
+          const {items} = result.data
           this.tableData = items
-          this.loading = false
         }
+      }).finally(() => {
+        this.loading = false
       })
     }
   },

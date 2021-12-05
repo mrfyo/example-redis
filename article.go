@@ -150,10 +150,11 @@ func GetArticleById(ID int) (art *Article, err error) {
 	m := cmd.Val()
 
 	art = &Article{
-		ID:     ID,
-		Title:  m["title"],
-		Link:   m["link"],
-		Poster: m["poster"],
+		ID:      ID,
+		Title:   m["title"],
+		Link:    m["link"],
+		Poster:  m["poster"],
+		Content: m["content"],
 	}
 	art.Time, _ = strconv.ParseInt(m["time"], 10, 64)
 	art.Votes, _ = strconv.Atoi(m["votes"])
@@ -181,7 +182,7 @@ func GetAllArticleByScore(num int) (articles []*Article) {
 
 func GetAllArticleByPage(offset, limit int) (artilces []*Article) {
 
-	keys, err := redisDB.ZRevRangeByScore(ctx, ArticleScoreZsetKey, &redis.ZRangeBy{
+	keys, err := redisDB.ZRevRangeByScore(ctx, ArticleRecordKey, &redis.ZRangeBy{
 		Min:    "-inf",
 		Max:    "+inf",
 		Offset: int64(offset),
@@ -206,8 +207,9 @@ func GetAllArticleIDs(ids []int) (articles []*Article) {
 	for _, id := range ids {
 		article, err := GetArticleById(id)
 		if err != nil {
-			articles = append(articles, article)
+			continue
 		}
+		articles = append(articles, article)
 	}
 	return
 }
@@ -231,7 +233,7 @@ func AddArticleHandler(c *gin.Context) {
 		return
 	}
 
-	if AnyEmptyStr(article.Title, article.Content) {
+	if AnyEmptyStr(article.Title, article.Content, article.Poster) {
 		result.Fail(c, 2, "Param Not Empty")
 		return
 	}
@@ -291,7 +293,7 @@ func ListArticleHandler(c *gin.Context) {
 		return
 	}
 
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "1"))
 	if err != nil || limit <= 0 {
 		result.Fail(c, 2, "Query Param Error: limit")
 		return

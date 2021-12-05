@@ -62,7 +62,14 @@
         <div>
             <el-button @click="handleOpen">新文章</el-button>
         </div>
-
+        <div>
+          <el-table :data="tableData" style="width: 100%" v-loading="loading">
+            <el-table-column type="index" label="#" width="60"></el-table-column>
+            <el-table-column prop="title" label="标题" width="180"></el-table-column>
+            <el-table-column prop="poster" label="作者" width="180"></el-table-column>
+            <el-table-column prop="votes" label="票数" width="180"></el-table-column>
+          </el-table>
+        </div>
         <el-dialog
             width="40%"
             :visible.sync="dialogVisible"
@@ -70,6 +77,9 @@
             @close="onClose"
             title="新用户">
             <el-form ref="elForm" :model="formData" :rules="rules" size="medium" label-width="100px">
+            <el-form-item label="作者" prop="poster">
+                <el-input v-model="formData.poster" placeholder="请输入作者" clearable :style="{width: '100%'}"></el-input>
+            </el-form-item>
             <el-form-item label="标题" prop="title">
                 <el-input v-model="formData.title" placeholder="请输入标题" clearable :style="{width: '100%'}"></el-input>
             </el-form-item>
@@ -99,12 +109,12 @@
 
     <script>
       const request = axios.create({
-        timeout: 1000,
+        timeout: 10000,
       });
     </script>
 
-    <script src="assets/user.js"></script>
-    <script src="assets/article.js"></script>
+    <script src="assets/js/user.js"></script>
+    <script src="assets/js/article.js"></script>
 
     <script>
       const vm = new Vue({

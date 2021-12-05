@@ -3,10 +3,16 @@ Vue.component("article-component", {
         return {
             dialogVisible: false,
             formData: {
+                poster: undefined,
                 title: undefined,
                 content: undefined,
             },
             rules: {
+                poster: [{
+                    required: true,
+                    message: '请输入标题',
+                    trigger: 'blur'
+                }],
                 title: [{
                     required: true,
                     message: '请输入标题',
@@ -18,7 +24,12 @@ Vue.component("article-component", {
                     trigger: 'blur'
                 }],
             },
+            loading: false,
+            tableData: [],
         }
+    },
+    created() {
+        this.fetchArticles()
     },
     methods: {
         onOpen() {
@@ -41,14 +52,35 @@ Vue.component("article-component", {
         },
 
         createArticle() {
-            axios.post("articles", this.formData).then(resp => {
+            request.post("api/articles", this.formData).then(resp => {
                 const result = resp.data
                 if (result.code === 0) {
                     this.$message.success("创建成功")
+                    this.fetchArticles()
                     this.close()
                 } else {
                     this.$message.error(result.message)
                 }
+            })
+        },
+
+        fetchArticles() {
+            this.loading = true
+            request.get("api/articles", {
+               params: {
+                offset: 0,
+                limit: 10
+               }
+            }).then(resp => {
+                const result = resp.data
+                if (result.code === 0) {
+                    const {items} = result.data
+                    this.tableData = items
+                } else {
+                    this.$message.error(result.message)
+                }
+            }).finally(() => {
+                this.loading = false
             })
         }
     },
