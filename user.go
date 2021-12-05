@@ -10,7 +10,7 @@ import (
 
 type User struct {
 	ID       int    `json:"id"`
-	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -30,7 +30,7 @@ func (user *User) KeyName() string {
 func (user *User) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":       user.ID,
-		"name":     user.Name,
+		"nickname": user.Nickname,
 		"username": user.Username,
 		"password": user.Password,
 	}
@@ -85,7 +85,7 @@ func GetUser(id int) (user *User, err error) {
 
 	user = &User{
 		ID:       id,
-		Name:     m["name"],
+		Nickname: m["nickname"],
 		Username: m["username"],
 		Password: m["password"],
 	}
@@ -94,9 +94,11 @@ func GetUser(id int) (user *User, err error) {
 
 func GetAllUser() (users []*User) {
 
-	cmd := redisDB.Scan(ctx, 0, "user", 0)
+	keys, _, err := redisDB.Scan(ctx, 0, "user:*", 0).Result()
 
-	keys, _ := cmd.Val()
+	if err != nil {
+		return
+	}
 
 	for _, key := range keys {
 		ID, err := ExtraID(key)
@@ -124,7 +126,7 @@ func AddUser(c *gin.Context) {
 		return
 	}
 
-	if AnyEmptyStr(user.Name, user.Username, user.Password) {
+	if AnyEmptyStr(user.Nickname, user.Username, user.Password) {
 		result.Fail(c, 1, "form value error")
 		return
 	}

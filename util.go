@@ -26,7 +26,7 @@ func NextID(name string) (ID int, err error) {
 
 // ExtraID 提取ID
 func ExtraID(key string) (ID int, err error) {
-	idx := strings.LastIndex(":", key)
+	idx := strings.LastIndex(key, ":")
 	if idx == -1 || idx == len(key)-1 {
 		err = errors.New("ID is not exist")
 		return

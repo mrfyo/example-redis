@@ -30,7 +30,12 @@ Vue.component("user-component", {
           },
         ],
       },
+      tableData: [],
+      loading: false
     };
+  },
+  created() {
+    this.fetchUsers()
   },
   methods: {
     onOpen() {},
@@ -52,16 +57,30 @@ Vue.component("user-component", {
     },
 
     createUser() {
-      axios.post("users", this.formData).then((resp) => {
+      request.post("api/users", this.formData).then((resp) => {
         const result = resp.data;
         if (result.code === 0) {
           this.$message.success("创建成功");
+          this.fetchUsers()
           this.close();
         } else {
           this.$message.error(result.message);
         }
       });
     },
+
+    fetchUsers() {
+      this.loading = true
+      request.get("api/users").then(resp => {
+        const result = resp.data
+        if(result.code === 0) {
+          const data = result.data
+          const {items} = data
+          this.tableData = items
+          this.loading = false
+        }
+      })
+    }
   },
   template: "#user-template",
 });

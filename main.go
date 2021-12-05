@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,7 +18,7 @@ var (
 )
 
 func main() {
-	CtrlCWatcher()
+	InterruptWatcher()
 
 	redisDB = redis.NewClient(&redis.Options{
 		Addr:     "127.0.0.1:6379",
@@ -25,20 +26,29 @@ func main() {
 		DB:       1,
 	})
 
-	router := gin.Default()
 
+	router := gin.Default()
+	router.LoadHTMLGlob("templates/*")
+	router.Static("/assets", "./assets")
+	HomeHandler(router)
 	userHandler(router)
 
 	router.Run(":8080")
 }
 
-func userHandler(router *gin.Engine) {
-	router.GET("/users", ListUser)
-	router.POST("/users", AddUser)
-	router.DELETE("/users/:id", DeleteUser)
+func HomeHandler(router *gin.Engine) {
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.html", gin.H{})
+	})
 }
 
-func CtrlCWatcher() {
+func userHandler(router *gin.Engine) {
+	router.GET("/api/users", ListUser)
+	router.POST("/api/users", AddUser)
+	router.DELETE("/api/users/:id", DeleteUser)
+}
+
+func InterruptWatcher() {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGALRM)
 	go func() {

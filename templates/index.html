@@ -22,7 +22,14 @@
         <div>
             <el-button @click="handleOpen">新用户</el-button>
         </div>
-
+        <div>
+          <el-table :data="tableData" style="width: 100%" v-loading="loading">
+            <el-table-column type="index" label="#" width="60"></el-table-column>
+            <el-table-column prop="nickname" label="昵称" width="180"></el-table-column>
+            <el-table-column prop="username" label="用户名" width="180"></el-table-column>
+            <el-table-column prop="password" label="密码" width="180"></el-table-column>
+          </el-table>
+        </div>
         <el-dialog
             width="30%"
             :visible.sync="dialogVisible"
@@ -55,6 +62,7 @@
         <div>
             <el-button @click="handleOpen">新文章</el-button>
         </div>
+
         <el-dialog
             width="40%"
             :visible.sync="dialogVisible"
@@ -80,17 +88,23 @@
 
     <div id="app">
       <el-row>
-          <el-col :span="12">
-            <user-component></user-component>
-          </el-col>
-          <el-col :span="12">
-            <article-component></article-component>
-          </el-col>
+        <el-col :span="12">
+          <user-component></user-component>
+        </el-col>
+        <el-col :span="12">
+          <article-component></article-component>
+        </el-col>
       </el-row>
     </div>
 
-    <script src="./user.js"></script>
-    <script src="./article.js"></script>
+    <script>
+      const request = axios.create({
+        timeout: 1000,
+      });
+    </script>
+
+    <script src="assets/user.js"></script>
+    <script src="assets/article.js"></script>
 
     <script>
       const vm = new Vue({
