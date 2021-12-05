@@ -3,9 +3,15 @@ package main
 import (
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/mrfyo/example-redis/result"
+)
+
+var (
+	UserRecordKey = "record:user"
 )
 
 type User struct {
@@ -13,6 +19,7 @@ type User struct {
 	Nickname string `json:"nickname"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Time     int64  `json:"time"`
 }
 
 //
@@ -46,11 +53,20 @@ func CreateUser(user *User) (err error) {
 		return
 	}
 	user.ID = ID
-	key := user.KeyName()
-	intCmd := redisDB.HSet(ctx, key, user.ToMap())
-	if err := intCmd.Err(); err != nil {
-		log.Println(err)
-	}
+	user.Time = time.Now().Unix()
+
+	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		key := user.KeyName()
+		err = redisDB.HSet(ctx, key, user.ToMap()).Err()
+
+		err = redisDB.ZAdd(ctx, UserRecordKey, &redis.Z{
+			Score:  float64(user.Time),
+			Member: key,
+		}).Err()
+
+		return err
+	})
+
 	return
 }
 
@@ -94,8 +110,10 @@ func GetUser(id int) (user *User, err error) {
 
 func GetAllUser() (users []*User) {
 
-	keys, _, err := redisDB.Scan(ctx, 0, "user:*", 0).Result()
-
+	keys, err := redisDB.ZRangeByScore(ctx, UserRecordKey, &redis.ZRangeBy{
+		Count: 10,
+	}).Result()
+	
 	if err != nil {
 		return
 	}
