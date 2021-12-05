@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-var (
-	
-)
+var ()
 
 func CounterKey(name string) string {
 	return KeyGenerate("counter", name)
@@ -19,16 +17,11 @@ func KeyGenerate(names ...string) string {
 }
 
 func NextID(name string) (ID int, err error) {
-
-	redisDB.HSet(ctx, "counter", )
-
-
-	intCmd := redisDB.Incr(ctx, CounterKey(name))
-	if err := intCmd.Err(); err != nil {
-		return 0, err
-	} else {
-		ID = int(intCmd.Val())
+	id, err := redisDB.HIncrBy(ctx, "counter", name, 1).Result()
+	if err != nil {
+		return
 	}
+	ID = int(id)
 	return
 }
 
