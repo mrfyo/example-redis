@@ -76,12 +76,9 @@ func (article *Article) VoteBy(user *User) (err error) {
 
 		article.Votes++
 		key = article.KeyName()
-		p.HSet(ctx, key, "votes", article.Votes)
+		p.HIncrBy(ctx, key, "votes", 1)
 
-		p.ZAdd(ctx, ArticleScoreZsetKey, &redis.Z{
-			Score:  article.GetScore(),
-			Member: key,
-		})
+		p.ZIncrBy(ctx, ArticleScoreZsetKey, voteBase, key)
 
 		return nil
 	})
