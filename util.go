@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+var (
+	
+)
+
 func CounterKey(name string) string {
 	return KeyGenerate("counter", name)
 }
@@ -15,6 +19,10 @@ func KeyGenerate(names ...string) string {
 }
 
 func NextID(name string) (ID int, err error) {
+
+	redisDB.HSet(ctx, "counter", )
+
+
 	intCmd := redisDB.Incr(ctx, CounterKey(name))
 	if err := intCmd.Err(); err != nil {
 		return 0, err

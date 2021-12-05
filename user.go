@@ -71,19 +71,23 @@ func CreateUser(user *User) (err error) {
 	return
 }
 
+func RemoveUser(user *User) (err error) {
+	redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		key := user.KeyName()
+
+		p.Del(ctx, key)
+		p.ZRem(ctx, UserRecordKey, key)
+
+		return nil
+	})
+
+	return
+}
+
 func UpdateUser(user *User) (err error) {
 	key := user.KeyName()
 	intCmd := redisDB.HSet(ctx, key, user.ToMap())
 	if err := intCmd.Err(); err != nil {
-		log.Println(err)
-	}
-	return
-}
-
-func RemoveUser(user *User) (err error) {
-	key := user.KeyName()
-	intCmd := redisDB.Del(ctx, key)
-	if err = intCmd.Err(); err != nil {
 		log.Println(err)
 	}
 	return

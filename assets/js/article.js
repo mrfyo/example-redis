@@ -51,6 +51,25 @@ Vue.component("article-component", {
             })
         },
 
+        handleRemove(row) {
+            const { id } = row
+            this.$confirm('此操作将永久删除该文章, 是否继续?', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                request.delete(`api/articles/${id}`).then(resp => {
+                    const result = resp.data;
+                    if (result.code === 0) {
+                        this.$message.success("删除成功");
+                        this.tableData = this.tableData.filter(item => item.id != id)
+                    } else {
+                        this.$message.error(result.message);
+                    }
+                })
+            })
+        },
+
         createArticle() {
             request.post("api/articles", this.formData).then(resp => {
                 const result = resp.data
@@ -67,14 +86,14 @@ Vue.component("article-component", {
         fetchArticles() {
             this.loading = true
             request.get("api/articles", {
-               params: {
-                offset: 0,
-                limit: 10
-               }
+                params: {
+                    offset: 0,
+                    limit: 10
+                }
             }).then(resp => {
                 const result = resp.data
                 if (result.code === 0) {
-                    const {items} = result.data
+                    const { items } = result.data
                     this.tableData = items
                 } else {
                     this.$message.error(result.message)

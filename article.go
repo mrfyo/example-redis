@@ -118,20 +118,21 @@ func CreateArticle(article *Article) (err error) {
 	return
 }
 
+func RemoveArticle(art *Article) (err error) {
+	redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		key := art.KeyName()
+		p.Del(ctx, key)
+		p.ZRem(ctx, ArticleRecordKey, key)
+		return nil
+	})
+
+	return
+}
+
 func UpdateArticle(article *Article) (err error) {
 	key := article.KeyName()
 	intCmd := redisDB.HSet(ctx, key, article.ToMap())
 	if err := intCmd.Err(); err != nil {
-		log.Println(err)
-	}
-	return
-}
-
-func RemoveArticle(art *Article) (err error) {
-	key := art.KeyName()
-
-	intCmd := redisDB.Del(ctx, key)
-	if err = intCmd.Err(); err != nil {
 		log.Println(err)
 	}
 	return
@@ -263,6 +264,8 @@ func DeleteArticleHandler(c *gin.Context) {
 	if err := RemoveArticle(article); err != nil {
 		result.Fail(c, 20, "Delete Fail")
 	}
+
+	result.Success(c, nil)
 }
 
 func TopListArticleHandler(c *gin.Context) {
