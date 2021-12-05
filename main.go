@@ -26,13 +26,12 @@ func main() {
 		DB:       1,
 	})
 
-
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	router.Static("/assets", "./assets")
 	HomeHandler(router)
-	userHandler(router)
-
+	UserHandler(router)
+	ArticleHandler(router)
 	router.Run(":8080")
 }
 
@@ -42,10 +41,18 @@ func HomeHandler(router *gin.Engine) {
 	})
 }
 
-func userHandler(router *gin.Engine) {
-	router.GET("/api/users", ListUser)
-	router.POST("/api/users", AddUser)
-	router.DELETE("/api/users/:id", DeleteUser)
+func UserHandler(router *gin.Engine) {
+	router.GET("/api/users", ListUserHandler)
+	router.POST("/api/users", AddUserHandler)
+	router.DELETE("/api/users/:id", DeleteUserHandler)
+}
+
+func ArticleHandler(r *gin.Engine) {
+	r.GET("/api/articles", ListArticleHandler)
+	r.POST("/api/articles", AddArticleHandler)
+	r.DELETE("/api/articles/:id", DeleteArticleHandler)
+	r.GET("/api/articles/top", TopListArticleHandler)
+	r.POST("/api/articles/vote", VoteArticleHandler)
 }
 
 func InterruptWatcher() {

@@ -148,7 +148,7 @@ func CountUser() (count int64) {
 // User API
 //
 
-func AddUser(c *gin.Context) {
+func AddUserHandler(c *gin.Context) {
 
 	var user User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -168,7 +168,7 @@ func AddUser(c *gin.Context) {
 	result.Success(c, user.ToMap())
 }
 
-func DeleteUser(c *gin.Context) {
+func DeleteUserHandler(c *gin.Context) {
 
 	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil || ID <= 0 {
@@ -190,7 +190,7 @@ func DeleteUser(c *gin.Context) {
 	result.Success(c, nil)
 }
 
-func ListUser(c *gin.Context) {
+func ListUserHandler(c *gin.Context) {
 	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
 	if err != nil || offset < 0 {
 		result.Fail(c, 2, "Query Param Error: offset")

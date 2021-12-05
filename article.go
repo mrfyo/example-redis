@@ -306,3 +306,45 @@ func ListArticleHandler(c *gin.Context) {
 		"items": articles,
 	})
 }
+
+func VoteArticleHandler(c *gin.Context) {
+	form := struct {
+		UserId    int `json:"userId"`
+		ArticleId int `json:"articleId"`
+	}{}
+
+	if err := c.ShouldBindJSON(&form); err != nil {
+		result.Fail(c, 1, "Form Error")
+		return
+	}
+
+	if form.UserId <= 0 {
+		result.Fail(c, 2, "Param Error: userId")
+		return
+	}
+
+	if form.ArticleId <= 0 {
+		result.Fail(c, 2, "Param Error: articleId")
+		return
+	}
+
+	user, err := GetUser(form.UserId)
+	if err != nil {
+		result.Fail(c, 10, "Not Exist: User")
+		return
+	}
+
+	article, err := GetArticleById(form.ArticleId)
+	if err != nil {
+		result.Fail(c, 10, "Not Exist: article")
+		return
+	}
+
+	err = article.VoteBy(user)
+	if err != nil {
+		result.Fail(c, 30, "voted fail")
+		return
+	}
+
+	result.Success(c, nil)
+}
