@@ -36,6 +36,17 @@ func ExtraID(key string) (ID int, err error) {
 	return
 }
 
+func BatchExtraID(keys []string) (ids []int, err error) {
+	for _, key := range keys {
+		if id, err := ExtraID(key); err != nil {
+			break
+		} else {
+			ids = append(ids, id)
+		}
+	}
+	return
+}
+
 func AnyEmptyStr(items ...string) (isEmpty bool) {
 	for _, v := range items {
 		if len(v) == 0 {

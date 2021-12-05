@@ -23,7 +23,7 @@ type User struct {
 }
 
 //
-// 领域方法
+// 域方法
 //
 
 func (User) TableName() string {
@@ -109,22 +109,24 @@ func GetUser(id int) (user *User, err error) {
 	return
 }
 
-func GetAllUser() (users []*User) {
+func GetAllUserByPage(offset, limit int) (users []*User) {
 
 	keys, err := redisDB.ZRangeByScore(ctx, UserRecordKey, &redis.ZRangeBy{
-		Min:   "-inf",
-		Max:   "+inf",
-		Count: 10,
+		Min:    "-inf",
+		Max:    "+inf",
+		Offset: int64(offset),
+		Count:  int64(limit),
 	}).Result()
 	if err != nil {
 		return
 	}
 
-	for _, key := range keys {
-		ID, err := ExtraID(key)
-		if err != nil {
-			continue
-		}
+	ids, err := BatchExtraID(keys)
+	if err != nil {
+		return
+	}
+
+	for _, ID := range ids {
 		user, err := GetUser(ID)
 		if err != nil {
 			continue
@@ -132,6 +134,14 @@ func GetAllUser() (users []*User) {
 		users = append(users, user)
 	}
 	return
+}
+
+func CountUser() (count int64) {
+	i, err := redisDB.ZCount(ctx, UserRecordKey, "-inf", "+inf").Result()
+	if err != nil {
+		return 0
+	}
+	return i
 }
 
 //
@@ -181,17 +191,23 @@ func DeleteUser(c *gin.Context) {
 }
 
 func ListUser(c *gin.Context) {
-
-	users := GetAllUser()
-
-	list := make([]map[string]interface{}, 0, len(users))
-
-	for _, user := range users {
-		list = append(list, user.ToMap())
+	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	if err != nil || offset < 0 {
+		result.Fail(c, 2, "Query Param Error: offset")
+		return
 	}
 
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	if err != nil || limit <= 0 {
+		result.Fail(c, 2, "Query Param Error: limit")
+		return
+	}
+
+	users := GetAllUserByPage(offset, limit)
+	total := CountUser()
+
 	result.Success(c, gin.H{
-		"total": len(list),
-		"items": list,
+		"total": total,
+		"items": users,
 	})
 }
