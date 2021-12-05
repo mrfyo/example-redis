@@ -23,6 +23,7 @@ func addUserHandler(c *gin.Context) {
 		result.Fail(c, 1, "form value error")
 		return
 	}
+	
 	if err := model.CreateUser(&user); err != nil {
 		result.Fail(c, 1, "create fail")
 		return

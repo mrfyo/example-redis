@@ -94,6 +94,33 @@ func listArticleHandler(c *gin.Context) {
 	})
 }
 
+func publishArticleHandler(c *gin.Context) {
+
+	form := struct {
+		UserId    int `json:"userId"`
+		ArticleId int `json:"articleId"`
+	}{}
+
+	if err := c.ShouldBindJSON(&form); err != nil {
+		result.Fail(c, 1, "Form Error")
+		return
+	}
+
+	article, err := model.GetArticleById(form.ArticleId)
+	if err != nil {
+		result.Fail(c, 10, "Article Not Exist")
+		return
+	}
+
+	if err := article.Published(); err != nil {
+		result.Fail(c, 30, err.Error())
+		return
+	}
+
+	result.Success(c, nil)
+
+}
+
 func voteArticleHandler(c *gin.Context) {
 	form := struct {
 		UserId    int `json:"userId"`

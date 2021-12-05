@@ -1,6 +1,8 @@
 package model
 
 import (
+	"crypto/md5"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -54,6 +56,7 @@ func CreateUser(user *User) (err error) {
 	}
 	user.ID = ID
 	user.Time = time.Now().Unix()
+	user.Password = fmt.Sprintf("%x", md5.Sum([]byte(user.Password)))
 
 	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
 		key := user.KeyName()

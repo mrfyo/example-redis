@@ -28,6 +28,7 @@ func articleHandler(r *gin.Engine) {
 	r.DELETE("/api/articles/:id", deleteArticleHandler)
 	r.GET("/api/articles/top", topListArticleHandler)
 	r.POST("/api/articles/vote", voteArticleHandler)
+	r.POST("/api/articles/publish", publishArticleHandler)
 }
 
 func homeHandler(router *gin.Engine) {
