@@ -31,14 +31,15 @@ Vue.component("user-component", {
         ],
       },
       tableData: [],
-      loading: false
+      loading: false,
+      holdUserId: undefined
     };
   },
   created() {
     this.fetchUsers()
   },
   methods: {
-    onOpen() {},
+    onOpen() { },
     onClose() {
       this.$refs["elForm"].resetFields();
     },
@@ -57,7 +58,7 @@ Vue.component("user-component", {
     },
 
     handleRemove(row) {
-      const {id} = row
+      const { id } = row
       this.$confirm('此操作将永久删除该用户, 是否继续?', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
@@ -73,6 +74,36 @@ Vue.component("user-component", {
           }
         })
       })
+    },
+
+    handleHold(row) {
+      const { id } = row
+      for(item of this.tableData) {
+        if(item.id !== id) {
+          item.holdable = false
+        }
+      }
+      this.holdUserId = id
+      this.$emit('update-user', row)
+    },
+
+    handleRelease(row) {
+      const { id } = row
+      for(item of this.tableData) {
+        if(item.id !== id) {
+          item.holdable = true
+        }
+      }
+      this.holdUserId = undefined
+      this.$emit('update-user', undefined)
+    },
+
+    hasHolded(row) {
+      return this.holdUserId === row.id
+    },
+
+    canHolded(row) {
+      return row.holdable
     },
 
     createUser() {
@@ -94,15 +125,24 @@ Vue.component("user-component", {
         params: {
           offset: 0,
           limit: 10
-         }
+        }
       }).then(resp => {
         const result = resp.data
-        if(result.code === 0) {
-          const {items} = result.data
-          this.tableData = items
+        if (result.code === 0) {
+          const { items } = result.data
+          this.tableData = this.fullUsers(items)
         }
       }).finally(() => {
         this.loading = false
+      })
+    },
+
+    // 补充 User 属性
+    fullUsers(users) {
+      return users.map(user => {
+        return Object.assign(user, {
+          "holdable": true
+        })
       })
     }
   },

@@ -1,4 +1,9 @@
 Vue.component("article-component", {
+    props: {
+        user: {
+            required: true
+        }
+    },
     data() {
         return {
             dialogVisible: false,
@@ -63,6 +68,29 @@ Vue.component("article-component", {
                     if (result.code === 0) {
                         this.$message.success("删除成功");
                         this.tableData = this.tableData.filter(item => item.id != id)
+                    } else {
+                        this.$message.error(result.message);
+                    }
+                })
+            })
+        },
+
+        handleLike(row) {
+            const { id } = row
+            const user = this.user
+            this.$confirm(`Hi ${user.nickname}, 是否为该文章投票?`, '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                request.post(`api/articles/vote`, {
+                    userId: user.id,
+                    articleId: id
+                }).then(resp => {
+                    const result = resp.data;
+                    if (result.code === 0) {
+                        this.$message.success("投票成功");
+                        this.fetchArticles()
                     } else {
                         this.$message.error(result.message);
                     }
