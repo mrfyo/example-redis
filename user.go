@@ -40,6 +40,7 @@ func (user *User) ToMap() map[string]interface{} {
 		"nickname": user.Nickname,
 		"username": user.Username,
 		"password": user.Password,
+		"time":     user.Time,
 	}
 }
 
@@ -111,9 +112,10 @@ func GetUser(id int) (user *User, err error) {
 func GetAllUser() (users []*User) {
 
 	keys, err := redisDB.ZRangeByScore(ctx, UserRecordKey, &redis.ZRangeBy{
+		Min:   "-inf",
+		Max:   "+inf",
 		Count: 10,
 	}).Result()
-	
 	if err != nil {
 		return
 	}
