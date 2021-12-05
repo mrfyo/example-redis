@@ -31,10 +31,19 @@ Vue.component("article-component", {
             },
             loading: false,
             tableData: [],
+            personal: false
         }
     },
     created() {
         this.fetchArticles()
+    },
+
+    watch: {
+        user: function(newVal, oldVal) {
+            if(newVal === undefined && !this.personal) {
+                this.fetchArticles()
+            }
+        }
     },
     methods: {
         onOpen() {
@@ -54,6 +63,17 @@ Vue.component("article-component", {
 
                 this.createArticle()
             })
+        },
+
+        handleSelectMode() {
+            const personal = !this.personal
+            const user = this.user
+            if(personal) {
+                this.tableData = this.tableData.filter(item => item.poster === user.username)
+            }else {
+                this.fetchArticles()
+            }
+            this.personal = personal
         },
 
         handleRemove(row) {

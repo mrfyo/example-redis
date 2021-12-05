@@ -9,8 +9,6 @@ import (
 	"github.com/mrfyo/example-redis/util"
 )
 
-
-
 func addArticleHandler(c *gin.Context) {
 	var article model.Article
 	if err := c.ShouldBindJSON(&article); err != nil {
@@ -131,7 +129,7 @@ func voteArticleHandler(c *gin.Context) {
 
 	err = article.VoteBy(user)
 	if err != nil {
-		result.Fail(c, 30, "voted fail")
+		result.Fail(c, 30, err.Error())
 		return
 	}
 

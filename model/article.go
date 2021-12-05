@@ -68,9 +68,14 @@ func (article *Article) Published() (err error) {
 
 // VoteBy 用户给文章投票
 func (article *Article) VoteBy(user *User) (err error) {
-	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
-		key := util.KeyGenerate("vote", article.KeyName())
+	key := util.KeyGenerate("vote", article.KeyName())
+	
+	ok, err := redisDB.SIsMember(ctx, key, user.KeyName()).Result()
+	if ok || err != nil {
+		return fmt.Errorf("has been voted by %s", user.Username)
+	}
 
+	redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
 		p.SAdd(ctx, key, user.KeyName())
 
 		article.Votes++
