@@ -111,26 +111,68 @@
 
 #### 1.2 操作
 
-**创建用户**
+**用户操作**
 
 ```sh
+# 创建
 > HINCRBY counter user 1
 > HSET user:4 id 4 nickname 'Jack Me' username Jack password 4ff9fc6e4e5d5f590c4f2134a8cc96d1
 > ZADD record:user 1638666257 user:4
+
+# 删除
+> ZREM record:user user:4
+> DEL user:4
+
+# 分页查询最近创建的10位用户
+> ZRevRangeByScore record:user '+inf' '-inf' LIMIT 0 10
+for id in idSet:
+	> HGETALL user:id
 ```
 
-**创建文章**
+**文章操作**
 
 ```sh
+# 创建
 > HINCRBY counter article 1
 > HSET article:3 id 3 title 'Go to statement considered harmful' link 'http://goo.gl/kZUSu' poster 'user:83271' time 1638673699 votes 0
 > ZADD record:article 1638673699 article:3
+
+# 删除
+> ZREM record:article article:3
+> DEL article:3
+
+
+# 分页查询最近创建的10篇文章
+> ZRevRangeByScore record:article '+inf' '-inf' LIMIT 0 10
+for id in idSet:
+	> HGETALL article:id
 ```
 
 **发布文章**
 
 ```sh
 > ZADD publish:article 1638673999 article:3
-> ZADD publis
+> ZADD score:article 1639969 article:3
 ```
+
+**向文章投票**
+
+```sh
+# 检查是否已经投过票
+> SISMEMBER vote:article:3 user:4
+# 添加投票记录
+> SADD vote:article:3 user:4
+# 增加票数
+> HINCRBY article:3 votes 1
+# 增加分数
+> ZINCRBY score:article article:3 432
+```
+
+
+
+#### 1.3 总结
+
+1. **不要使用 KEYS 扫描键**。刚开始使用时，不知该操作会阻塞线程，且十分耗时。在阅读文档后，了解到实际运用时，应该避免使用 `KEYS` 命令，而应该使用 `SCAN`命令。
+2. 有序集合，将时间作为基数，可以实现分页查询和按时间查询。
+3. 集合可以充当索引。
 
