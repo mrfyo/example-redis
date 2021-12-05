@@ -84,6 +84,7 @@
                 <div v-if="user">
                   <span v-if="personal">
                     <el-button type="danger" size="small" @click="handleRemove(scope.row)">删除</el-button>      
+                    <el-button type="primary" size="small" @click="handlePublish(scope.row)">发布</el-button>      
                   </span>
                   <span v-else style="margin-left: 8px;">
                     <el-button type="primary" size="small" @click="handleLike(scope.row)">点赞</el-button> 

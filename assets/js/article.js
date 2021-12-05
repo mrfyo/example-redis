@@ -95,6 +95,29 @@ Vue.component("article-component", {
             })
         },
 
+        handlePublish(row) {
+            const { id } = row
+            const user = this.user
+            this.$confirm('此操作将发布该文章, 是否继续?', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                type: 'warning'
+            }).then(() => {
+                request.post(`api/articles/publish`, {
+                    userId: user.id,
+                    articleId: id
+                }).then(resp => {
+                    const result = resp.data;
+                    if (result.code === 0) {
+                        this.$message.success("发布成功");
+                        this.fetchArticles()
+                    } else {
+                        this.$message.error(result.message);
+                    }
+                })
+            })
+        },
+
         handleLike(row) {
             const { id } = row
             const user = this.user
