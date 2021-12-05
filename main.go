@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/mrfyo/example-redis/api"
+	"github.com/mrfyo/example-redis/model"
 )
 
 var (
@@ -27,33 +28,11 @@ func main() {
 	})
 
 	router := gin.Default()
-	router.LoadHTMLGlob("templates/*")
-	router.Static("/assets", "./assets")
-	router.StaticFile("/favicon.ico", "./assets/favicon.ico")
-	HomeHandler(router)
-	UserHandler(router)
-	ArticleHandler(router)
+
+	model.InitModel(redisDB, ctx)
+	api.InitHandler(router)
+
 	router.Run(":8080")
-}
-
-func HomeHandler(router *gin.Engine) {
-	router.GET("/", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "index.html", gin.H{})
-	})
-}
-
-func UserHandler(router *gin.Engine) {
-	router.GET("/api/users", ListUserHandler)
-	router.POST("/api/users", AddUserHandler)
-	router.DELETE("/api/users/:id", DeleteUserHandler)
-}
-
-func ArticleHandler(r *gin.Engine) {
-	r.GET("/api/articles", ListArticleHandler)
-	r.POST("/api/articles", AddArticleHandler)
-	r.DELETE("/api/articles/:id", DeleteArticleHandler)
-	r.GET("/api/articles/top", TopListArticleHandler)
-	r.POST("/api/articles/vote", VoteArticleHandler)
 }
 
 func InterruptWatcher() {

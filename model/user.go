@@ -1,13 +1,12 @@
-package main
+package model
 
 import (
 	"log"
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/mrfyo/example-redis/result"
+	"github.com/mrfyo/example-redis/util"
 )
 
 var (
@@ -31,7 +30,7 @@ func (User) TableName() string {
 }
 
 func (user *User) KeyName() string {
-	return KeyGenerate(user.TableName(), strconv.Itoa(user.ID))
+	return util.KeyGenerate(user.TableName(), strconv.Itoa(user.ID))
 }
 
 func (user *User) ToMap() map[string]interface{} {
@@ -49,7 +48,7 @@ func (user *User) ToMap() map[string]interface{} {
 //
 
 func CreateUser(user *User) (err error) {
-	ID, err := NextID(user.TableName())
+	ID, err := nextID(user.TableName())
 	if err != nil {
 		return
 	}
@@ -125,7 +124,7 @@ func GetAllUserByPage(offset, limit int) (users []*User) {
 		return
 	}
 
-	ids, err := BatchExtraID(keys)
+	ids, err := util.BatchExtraID(keys)
 	if err != nil {
 		return
 	}
@@ -146,72 +145,4 @@ func CountUser() (count int64) {
 		return 0
 	}
 	return i
-}
-
-//
-// User API
-//
-
-func AddUserHandler(c *gin.Context) {
-
-	var user User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		result.Fail(c, 1, "form struct error")
-		return
-	}
-
-	if AnyEmptyStr(user.Nickname, user.Username, user.Password) {
-		result.Fail(c, 1, "form value error")
-		return
-	}
-	if err := CreateUser(&user); err != nil {
-		result.Fail(c, 1, "create fail")
-		return
-	}
-
-	result.Success(c, user.ToMap())
-}
-
-func DeleteUserHandler(c *gin.Context) {
-
-	ID, err := strconv.Atoi(c.Param("id"))
-	if err != nil || ID <= 0 {
-		result.Fail(c, 1, "Path Param error: id")
-		return
-	}
-
-	user, err := GetUser(ID)
-	if err != nil {
-		result.Fail(c, 10, "user not exist")
-		return
-	}
-
-	if err := RemoveUser(user); err != nil {
-		result.Fail(c, 10, "Delete User Fail")
-		return
-	}
-
-	result.Success(c, nil)
-}
-
-func ListUserHandler(c *gin.Context) {
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	if err != nil || offset < 0 {
-		result.Fail(c, 2, "Query Param Error: offset")
-		return
-	}
-
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "0"))
-	if err != nil || limit <= 0 {
-		result.Fail(c, 2, "Query Param Error: limit")
-		return
-	}
-
-	users := GetAllUserByPage(offset, limit)
-	total := CountUser()
-
-	result.Success(c, gin.H{
-		"total": total,
-		"items": users,
-	})
 }

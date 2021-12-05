@@ -1,4 +1,4 @@
-package main
+package model
 
 import (
 	"fmt"
@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/mrfyo/example-redis/result"
+	"github.com/mrfyo/example-redis/util"
 )
 
 const (
@@ -34,7 +33,7 @@ func (Article) TableName() string {
 }
 
 func (art *Article) KeyName() string {
-	return KeyGenerate(art.TableName(), strconv.Itoa(art.ID))
+	return util.KeyGenerate(art.TableName(), strconv.Itoa(art.ID))
 }
 
 func (art *Article) ToMap() map[string]interface{} {
@@ -70,7 +69,7 @@ func (article *Article) Published() (err error) {
 // VoteBy 用户给文章投票
 func (article *Article) VoteBy(user *User) (err error) {
 	_, err = redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
-		key := KeyGenerate("vote", article.KeyName())
+		key := util.KeyGenerate("vote", article.KeyName())
 
 		p.SAdd(ctx, key, user.KeyName())
 
@@ -97,7 +96,7 @@ func (article *Article) GetScore() float64 {
 //
 
 func CreateArticle(article *Article) (err error) {
-	article.ID, err = NextID(article.TableName())
+	article.ID, err = nextID(article.TableName())
 	if err != nil {
 		return
 	}
@@ -140,7 +139,7 @@ func UpdateArticle(article *Article) (err error) {
 
 func GetArticleById(ID int) (art *Article, err error) {
 
-	key := KeyGenerate(ArticleName, strconv.Itoa(ID))
+	key := util.KeyGenerate(ArticleName, strconv.Itoa(ID))
 	cmd := redisDB.HGetAll(ctx, key)
 
 	if err = cmd.Err(); err != nil {
@@ -173,7 +172,7 @@ func GetAllArticleByScore(num int) (articles []*Article) {
 		return
 	}
 
-	ids, err := BatchExtraID(keys)
+	ids, err := util.BatchExtraID(keys)
 	if err != nil {
 		return
 	}
@@ -195,7 +194,7 @@ func GetAllArticleByPage(offset, limit int) (artilces []*Article) {
 		return
 	}
 
-	ids, err := BatchExtraID(keys)
+	ids, err := util.BatchExtraID(keys)
 	if err != nil {
 		return
 	}
@@ -221,135 +220,4 @@ func CountArticle() (count int64) {
 		return 0
 	}
 	return i
-}
-
-//
-// API: Article
-//
-
-func AddArticleHandler(c *gin.Context) {
-	var article Article
-	if err := c.ShouldBindJSON(&article); err != nil {
-		result.Fail(c, 1, "Form Error")
-		return
-	}
-
-	if AnyEmptyStr(article.Title, article.Content, article.Poster) {
-		result.Fail(c, 2, "Param Not Empty")
-		return
-	}
-
-	if err := CreateArticle(&article); err != nil {
-		result.Fail(c, 10, "Create Fail.")
-		return
-	}
-
-	result.Success(c, nil)
-}
-
-func DeleteArticleHandler(c *gin.Context) {
-
-	ID, err := strconv.Atoi(c.Param("id"))
-	if err != nil || ID <= 0 {
-		result.Fail(c, 2, "Path Param Error: ID")
-		return
-	}
-
-	article, err := GetArticleById(ID)
-	if err != nil {
-		result.Fail(c, 10, "Article Not Exist")
-		return
-	}
-
-	if err := RemoveArticle(article); err != nil {
-		result.Fail(c, 20, "Delete Fail")
-	}
-
-	result.Success(c, nil)
-}
-
-func TopListArticleHandler(c *gin.Context) {
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	if err != nil {
-		result.Fail(c, 2, "Query Param Error: limit")
-		return
-	}
-
-	articles := GetAllArticleByScore(limit)
-
-	list := make([]map[string]interface{}, 0, len(articles))
-
-	for _, article := range articles {
-		list = append(list, article.ToMap())
-	}
-
-	result.Success(c, gin.H{
-		"total": len(articles),
-		"items": list,
-	})
-}
-
-func ListArticleHandler(c *gin.Context) {
-	offset, err := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	if err != nil || offset < 0 {
-		result.Fail(c, 2, "Query Param Error: offset")
-		return
-	}
-
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "1"))
-	if err != nil || limit <= 0 {
-		result.Fail(c, 2, "Query Param Error: limit")
-		return
-	}
-
-	articles := GetAllArticleByPage(offset, limit)
-
-	total := CountArticle()
-
-	result.Success(c, gin.H{
-		"total": total,
-		"items": articles,
-	})
-}
-
-func VoteArticleHandler(c *gin.Context) {
-	form := struct {
-		UserId    int `json:"userId"`
-		ArticleId int `json:"articleId"`
-	}{}
-
-	if err := c.ShouldBindJSON(&form); err != nil {
-		result.Fail(c, 1, "Form Error")
-		return
-	}
-
-	if form.UserId <= 0 {
-		result.Fail(c, 2, "Param Error: userId")
-		return
-	}
-
-	if form.ArticleId <= 0 {
-		result.Fail(c, 2, "Param Error: articleId")
-		return
-	}
-
-	user, err := GetUser(form.UserId)
-	if err != nil {
-		result.Fail(c, 10, "Not Exist: User")
-		return
-	}
-
-	article, err := GetArticleById(form.ArticleId)
-	if err != nil {
-		result.Fail(c, 10, "Not Exist: article")
-		return
-	}
-
-	err = article.VoteBy(user)
-	if err != nil {
-		result.Fail(c, 30, "voted fail")
-		return
-	}
-
-	result.Success(c, nil)
 }

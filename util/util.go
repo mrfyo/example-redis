@@ -1,9 +1,10 @@
-package main
+package util
 
 import (
 	"errors"
 	"strconv"
 	"strings"
+
 )
 
 var ()
@@ -16,14 +17,7 @@ func KeyGenerate(names ...string) string {
 	return strings.Join(names, ":")
 }
 
-func NextID(name string) (ID int, err error) {
-	id, err := redisDB.HIncrBy(ctx, "counter", name, 1).Result()
-	if err != nil {
-		return
-	}
-	ID = int(id)
-	return
-}
+
 
 // ExtraID 提取ID
 func ExtraID(key string) (ID int, err error) {
