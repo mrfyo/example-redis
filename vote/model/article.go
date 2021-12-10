@@ -69,7 +69,7 @@ func (article *Article) Published() (err error) {
 // VoteBy 用户给文章投票
 func (article *Article) VoteBy(user *User) (err error) {
 	key := util.KeyGenerate("vote", article.KeyName())
-	
+
 	ok, err := redisDB.SIsMember(ctx, key, user.KeyName()).Result()
 	if ok || err != nil {
 		return fmt.Errorf("has been voted by %s", user.Username)
@@ -94,6 +94,20 @@ func (article *Article) VoteBy(user *User) (err error) {
 func (article *Article) GetScore() float64 {
 	score := article.Time/1000 + int64(voteBase*article.Votes)
 	return float64(score)
+}
+
+func ArticleOfMap(m map[string]string) *Article {
+	article := Article{
+		Title:   m["title"],
+		Link:    m["link"],
+		Poster:  m["poster"],
+		Content: m["content"],
+	}
+	article.ID, _ = strconv.Atoi(m["id"])
+	article.Time, _ = strconv.ParseInt(m["time"], 10, 64)
+	article.Votes, _ = strconv.Atoi(m["votes"])
+
+	return &article
 }
 
 //
@@ -152,17 +166,8 @@ func GetArticleById(ID int) (art *Article, err error) {
 		return
 	}
 
-	m := cmd.Val()
+	art = ArticleOfMap(cmd.Val())
 
-	art = &Article{
-		ID:      ID,
-		Title:   m["title"],
-		Link:    m["link"],
-		Poster:  m["poster"],
-		Content: m["content"],
-	}
-	art.Time, _ = strconv.ParseInt(m["time"], 10, 64)
-	art.Votes, _ = strconv.Atoi(m["votes"])
 	return
 }
 
@@ -209,13 +214,23 @@ func GetAllArticleByPage(offset, limit int) (artilces []*Article) {
 }
 
 func GetAllArticleIDs(ids []int) (articles []*Article) {
-	for _, id := range ids {
-		article, err := GetArticleById(id)
-		if err != nil {
+
+	var cmds []*redis.StringStringMapCmd
+	redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, id := range ids {
+			key := util.KeyGenerate(ArticleName, strconv.Itoa(id))
+			cmds = append(cmds, redisDB.HGetAll(ctx, key))
+		}
+		return nil
+	})
+
+	for _, cmd := range cmds {
+		if cmd.Err() != nil {
 			continue
 		}
-		articles = append(articles, article)
+		articles = append(articles, ArticleOfMap(cmd.Val()))
 	}
+
 	return
 }
 

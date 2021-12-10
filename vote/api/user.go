@@ -61,7 +61,7 @@ func listUserHandler(c *gin.Context) {
 		return
 	}
 
-	limit, err := strconv.Atoi(c.DefaultQuery("limit", "0"))
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "1"))
 	if err != nil || limit <= 0 {
 		result.Fail(c, 2, "Query Param Error: limit")
 		return

@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	UserKey       = "user"
 	UserRecordKey = "record:user"
 )
 
@@ -42,6 +43,16 @@ func (user *User) ToMap() map[string]interface{} {
 		"username": user.Username,
 		"password": user.Password,
 		"time":     user.Time,
+	}
+}
+
+func UserOfMap(m map[string]string) *User {
+	id, _ := strconv.Atoi(m["id"])
+	return &User{
+		ID:       id,
+		Nickname: m["nickname"],
+		Username: m["username"],
+		Password: m["password"],
 	}
 }
 
@@ -99,19 +110,13 @@ func GetUser(id int) (user *User, err error) {
 	user = &User{
 		ID: id,
 	}
-	cmd := redisDB.HGetAll(ctx, user.KeyName())
-	if err = cmd.Err(); err != nil {
+	m, err := redisDB.HGetAll(ctx, user.KeyName()).Result()
+	if err != nil {
 		log.Println(err)
 		return
 	}
-	m := cmd.Val()
 
-	user = &User{
-		ID:       id,
-		Nickname: m["nickname"],
-		Username: m["username"],
-		Password: m["password"],
-	}
+	user = UserOfMap(m)
 	return
 }
 
@@ -132,13 +137,21 @@ func GetAllUserByPage(offset, limit int) (users []*User) {
 		return
 	}
 
-	for _, ID := range ids {
-		user, err := GetUser(ID)
-		if err != nil {
-			continue
+	var cmds []*redis.StringStringMapCmd
+	redisDB.Pipelined(ctx, func(p redis.Pipeliner) error {
+		for _, ID := range ids {
+			key := util.KeyGenerate(UserKey, strconv.Itoa(ID))
+			cmds = append(cmds, redisDB.HGetAll(ctx, key))
 		}
-		users = append(users, user)
+
+		return nil
+	})
+	for _, cmd := range cmds {
+		if cmd.Err() == nil {
+			users = append(users, UserOfMap(cmd.Val()))
+		}
 	}
+
 	return
 }
 
